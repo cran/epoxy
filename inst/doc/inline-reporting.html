@@ -119,13 +119,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
   for (var i = 0; i < sheets.length; i++) {
     if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
     try { var rules = sheets[i].cssRules; } catch (e) { continue; }
-    for (var j = 0; j < rules.length; j++) {
+    var j = 0;
+    while (j < rules.length) {
       var rule = rules[j];
       // check if there is a div.sourceCode rule
-      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -413,8 +420,8 @@ results by accessing the list elements by name with <code>$</code>.</p>
 <span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>Read more about [`knitr::knit()`]({knitted$doc_url}).</span>
 <span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>```</span></code></pre></div>
 <div class="epoxy-output">
-<p>Report prepared on 2023-05-29 from <code>inline-reporting.Rmd</code>
-with knitr version 1.43 😆. Read more about <a href="https://rdrr.io/pkg/knitr/man/knit.html"><code>knitr::knit()</code></a>.</p>
+<p>Report prepared on 2023-06-11 from <code>inline-reporting.Rmd</code>
+with knitr version 1.42 😆. Read more about <a href="https://rdrr.io/pkg/knitr/man/knit.html"><code>knitr::knit()</code></a>.</p>
 </div>
 <p>This is still essentially equivalent to R Markdown’s inline R chunks.
 But <code>epoxy</code> chunks include a <code>data</code> chunk
@@ -426,8 +433,8 @@ list directly without having to use <code>$</code>.</p>
 <span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>Read more about [`knitr::knit()`]({doc_url}).</span>
 <span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>```</span></code></pre></div>
 <div class="epoxy-output">
-<p>Report prepared on 2023-05-29 from <code>inline-reporting.Rmd</code>
-with knitr version 1.43 😆. Read more about <a href="https://rdrr.io/pkg/knitr/man/knit.html"><code>knitr::knit()</code></a>.</p>
+<p>Report prepared on 2023-06-11 from <code>inline-reporting.Rmd</code>
+with knitr version 1.42 😆. Read more about <a href="https://rdrr.io/pkg/knitr/man/knit.html"><code>knitr::knit()</code></a>.</p>
 </div>
 <p>Note that we can still have arbitrary R code in epoxy inline
 expressions: the <code>emo_ji()</code> function — a vignette-safe

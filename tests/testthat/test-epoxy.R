@@ -14,7 +14,7 @@ describe("epoxy_html()", {
 	it("uses html, inline transformers by default", {
 		expect_equal(
 			epoxy_html("{{ span letters[1:3] }}"),
-			html_chr(glue("<span>{x}</span>", x = letters[1:3]))
+			html_chr(glue("<span>a</span><span>b</span><span>c</span>"))
 		)
 
 		expect_equal(
@@ -153,4 +153,18 @@ describe("epoxy_transform_set()", {
 			glue("\\texttt{{1}} and \\texttt{{2}} is \\texttt{{3}}")
 		)
 	})
+})
+
+test_that("with_epoxy_engine()", {
+	old_opts <- options(epoxy.engine = NULL)
+	on.exit(options(old_opts))
+
+	expect_equal(with_epoxy_engine("html", engine_current()), "html")
+	expect_null(engine_current())
+
+	expect_equal(with_epoxy_engine("markdown", engine_current()), "md")
+	expect_null(engine_current())
+
+	expect_equal(with_epoxy_engine("latex", engine_current()), "latex")
+	expect_null(engine_current())
 })

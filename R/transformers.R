@@ -155,11 +155,15 @@ epoxy_transform_set <- function(
 		return(lapply(engine, getOption, default = NULL))
 	}
 
-	for (eng in engine) {
-		# TODO: make it possible to reset inline transformer settings
-		.globals[["inline"]][[eng]] <-
-			purrr::list_assign(.globals[["inline"]][[eng]], !!!inlines)
+	if (length(inlines)) {
+		for (eng in engine) {
+			# TODO: make it possible to reset inline transformer settings
+			.globals[["inline"]][[eng]] <-
+				purrr::list_assign(.globals[["inline"]][[eng]], !!!inlines)
+		}
 	}
+
+	if (length(transforms) == 0) return(invisible())
 
 	opts_to_set <- list()
 	for (eng in engine) {
@@ -319,8 +323,6 @@ engine_pick <- function(md, html = md, latex = md) {
 		return(md)
 	}
 
-	engine <- engine_aliases[engine]
-
 	switch(
 		engine,
 		md = md,
@@ -331,14 +333,21 @@ engine_pick <- function(md, html = md, latex = md) {
 }
 
 engine_current <- function(default = NULL) {
+	knitr_engine <- knitr::opts_current$get("engine")
+	if (!is.null(knitr_engine) && !knitr_engine %in% names(engine_aliases)) {
+		knitr_engine <- NULL
+	}
+
 	engine <-
 		getOption("epoxy.engine", NULL) %||%
-		knitr::opts_current$get("engine") %||%
+		knitr_engine %||%
 		default
 
-	if (is.null(engine)) return(NULL)
+	if (is.null(engine)) {
+		return(NULL)
+	}
 
-	engine_aliases[engine]
+	unname(engine_aliases[engine])
 }
 
 engine_aliases <- c(

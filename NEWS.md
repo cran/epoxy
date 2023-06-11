@@ -1,3 +1,14 @@
+# epoxy 0.1.1
+
+* `epoxy_transform_html()` now (again) returns a collapsed character string for
+  inline HTML transformations. This makes it easier to wrap a vector in
+  individual HTML tags and then slot it into a parent template. You can still
+  get length-consistent output by setting `collapse = FALSE`, which is most
+  useful when you want the template around the expression to repeat. (#96)
+
+* Fixed an issue with `epoxy_transform_set()` that prevented it from working
+  when `knitr::opts_current$get("engine")` returned an unexpected value.
+
 # epoxy 0.1.0
 
 This is epoxy's first release on CRAN! This NEWS file collects changes from
