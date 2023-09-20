@@ -5,9 +5,21 @@
 \alias{ui_epoxy_whisker}
 \title{Epoxy HTML Mustache Template}
 \usage{
-ui_epoxy_mustache(id, ..., .file = NULL, .sep = "", .container = "div")
+ui_epoxy_mustache(
+  id,
+  ...,
+  .file = NULL,
+  .sep = "",
+  .container = "epoxy-mustache"
+)
 
-ui_epoxy_whisker(id, ..., .file = NULL, .sep = "", .container = "div")
+ui_epoxy_whisker(
+  id,
+  ...,
+  .file = NULL,
+  .sep = "",
+  .container = "epoxy-mustache"
+)
 }
 \arguments{
 \item{id}{The ID of the output.}
@@ -80,6 +92,12 @@ server <- function(input, output, session) {
   })
 
   favorites <- reactive({
+    if (identical(input$fruits, "123456")) {
+      # Errors are equivalent to "empty" values,
+      # the rest of the template will still render.
+      stop("Bad fruits, bad!")
+    }
+
     if (!nzchar(input$fruits)) return(NULL)
     list(fruits = strsplit(input$fruits, "\\\\s*,\\\\s*")[[1]])
   })
@@ -101,4 +119,8 @@ run_epoxy_example_app("ui_epoxy_mustache")
 }
 \seealso{
 \code{\link[=ui_epoxy_html]{ui_epoxy_html()}}, \code{\link[=render_epoxy]{render_epoxy()}}
+
+Other Mustache-style template functions: 
+\code{\link{epoxy_mustache}()}
 }
+\concept{Mustache-style template functions}

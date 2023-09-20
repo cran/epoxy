@@ -82,6 +82,19 @@ describe("epoxy_transform_inline()", {
 		)
 	})
 
+	it("applies .sentence and .sc", {
+		start <- "it was a dark and stormy night"
+		expect_equal(
+			epoxy("{.sentence start}", .transformer = "inline"),
+			"It was a dark and stormy night"
+		)
+
+		expect_equal(
+			epoxy("{.sc start}", .transformer = "inline"),
+			"It was a dark and stormy night"
+		)
+	})
+
 	it("errors if a non-dotted argument name is provided", {
 		expect_snapshot_error(
 			epoxy_transform_inline(
@@ -167,7 +180,7 @@ describe("epoxy internal inline formatters", {
 		)
 
 		expect_equal(
-			epoxy_latex("<.strong letters[1]>", .transformer = "inline"),
+			epoxy_latex("<<.strong letters[1]>>", .transformer = "inline"),
 			"\\textbf{a}"
 		)
 	})
@@ -184,7 +197,7 @@ describe("epoxy internal inline formatters", {
 		)
 
 		expect_equal(
-			epoxy_latex("<.italic letters[1]>", .transformer = "inline"),
+			epoxy_latex("<<.italic letters[1]>>", .transformer = "inline"),
 			"\\emph{a}"
 		)
 	})
@@ -201,8 +214,23 @@ describe("epoxy internal inline formatters", {
 		)
 
 		expect_equal(
-			epoxy_latex("<.code letters[1]>", .transformer = "inline"),
+			epoxy_latex("<<.code letters[1]>>", .transformer = "inline"),
 			"\\texttt{a}"
 		)
 	})
+})
+
+test_that("detect_wrapped_delims", {
+	expect_true(detect_wrapped_delims("{{ foo }}", open = "{{", close = "}}"))
+	expect_true(detect_wrapped_delims("[x]", open = "[", close = "]"))
+	expect_true(detect_wrapped_delims("{x]", open = "{", close = "]"))
+	expect_true(detect_wrapped_delims("{x}", open = "{", close = "}"))
+
+	expect_false(detect_wrapped_delims("{{ foo }}", open = "[", close = "]"))
+	expect_false(detect_wrapped_delims("[x]", open = "{", close = "}"))
+	expect_false(detect_wrapped_delims("x"))
+
+	expect_false(detect_wrapped_delims("{{ x }}", open = "{", close = "}"))
+	expect_false(detect_wrapped_delims("{{ x }", open = "{", close = "}"))
+	expect_false(detect_wrapped_delims("{ x }}", open = "{", close = "}"))
 })

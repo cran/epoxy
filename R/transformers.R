@@ -157,7 +157,6 @@ epoxy_transform_set <- function(
 
 	if (length(inlines)) {
 		for (eng in engine) {
-			# TODO: make it possible to reset inline transformer settings
 			.globals[["inline"]][[eng]] <-
 				purrr::list_assign(.globals[["inline"]][[eng]], !!!inlines)
 		}
@@ -178,7 +177,7 @@ epoxy_transform_set <- function(
 find_epoxy_transformer <- function(name) {
 	fn_name <- glue("epoxy_transform_{name}")
 	tryCatch(
-		rlang::as_function(fn_name),
+		rlang::as_function(fn_name, env = rlang::fn_env(find_epoxy_transformer)),
 		error = function(err) {
 			msg <- glue("`epoxy_transform_{name}()` doesn't exist.")
 			info <- glue("`{name}` doesn't correspond to an {{epoxy}} function.")
@@ -333,7 +332,8 @@ engine_pick <- function(md, html = md, latex = md) {
 }
 
 engine_current <- function(default = NULL) {
-	knitr_engine <- knitr::opts_current$get("engine")
+	knitr_engine <- if (!knitr_is_inline_chunk()) knitr::opts_current$get("engine")
+
 	if (!is.null(knitr_engine) && !knitr_engine %in% names(engine_aliases)) {
 		knitr_engine <- NULL
 	}

@@ -1,3 +1,83 @@
+test_that("epoxy .data pronoun", {
+	expect_equal(
+		epoxy("{.data}", .data = list(a = "hi", b = "there")),
+		glue('{list(a = "hi", b = "there")}')
+	)
+
+	expect_equal(
+		epoxy("{.data$a}", .data = list(a = "hi", b = "there")),
+		glue("hi")
+	)
+
+	expect_equal(
+		epoxy(
+			"{.comma unlist(.data[c('b', 'a')])}",
+			.data = list(a = "hi", b = "there")
+		),
+		glue("there, hi")
+	)
+})
+
+test_that("epoxy(.collapse =)", {
+	expect_equal(
+		epoxy("{letters[1:3]}", .collapse = ", "),
+		"a, b, c"
+	)
+
+	expect_equal(
+		epoxy_latex("<<letters[1:3]>>", .collapse = " \\middot "),
+		"a \\middot b \\middot c"
+	)
+
+	expect_equal(
+		epoxy_html(
+			"{{values}}",
+			values = letters[1:3],
+			.collapse = "<br>"
+		),
+		"a<br>b<br>c"
+	)
+
+	expect_equal(
+		epoxy_html(
+			"{{li values}}",
+			values = letters[1:3],
+			# inline html tranformers pre-collapse
+			.collapse = "<br>"
+		),
+		"<li>a</li><li>b</li><li>c</li>"
+	)
+})
+
+test_that("epoxy_data_subset()", {
+	nested <- list(
+		outer = list(
+			list(inner = "one"),
+			list(inner = "two")
+		),
+		flat = list(inner = "flat"),
+		ragged = list(
+			list(inner = c("one", "two")),
+			list(inner = "three")
+		)
+	)
+
+	expect_equal(
+		epoxy("{.comma outer$inner}", .data = nested),
+		glue("one, two")
+	)
+
+	expect_equal(
+		epoxy("{flat$inner}", .data = nested),
+		glue("flat")
+	)
+
+	expect_equal(
+		epoxy("{ragged$inner[[1]][2]}", .data = nested),
+		glue("two")
+	)
+})
+
 describe("epoxy_html()", {
 	it("returns an html glue character", {
 		expect_s3_class(
@@ -34,6 +114,25 @@ describe("epoxy_html()", {
 			html_chr(glue('<span class="and">a</span>'))
 		)
 	})
+
+	it("uses @ to jump to epoxy_transform_inline", {
+		expect_equal(
+			epoxy_html("{{@and letters[1:3] }}"),
+			html_chr(glue(and::and(letters[1:3])))
+		)
+
+		# outer dots go to html transformer
+		expect_equal(
+			epoxy_html("{{.and {{@and letters[1:3] }} }}"),
+			html_chr(glue('<span class="and">{and::and(letters[1:3])}</span>'))
+		)
+
+		# inner dots are now in the inline transformer
+		expect_equal(
+			epoxy_html("{{@and {{.uppercase letters[1:3] }} }}"),
+			glue(and::and(LETTERS[1:3]))
+		)
+	})
 })
 
 describe("epoxy_transform_set()", {
@@ -59,7 +158,7 @@ describe("epoxy_transform_set()", {
 		)
 
 		expect_equal(
-			epoxy_latex("<1> and <2> is <3>"),
+			epoxy_latex("<<1>> and <<2>> is <<3>>"),
 			glue("\\textbf{{1}} and \\textbf{{2}} is \\textbf{{3}}")
 		)
 	})
@@ -79,7 +178,7 @@ describe("epoxy_transform_set()", {
 		)
 
 		expect_equal(
-			epoxy_latex("<.bold 'hi'>"),
+			epoxy_latex("<<.bold 'hi'>>"),
 			glue("PASS")
 		)
 	})
@@ -149,7 +248,7 @@ describe("epoxy_transform_set()", {
 		)
 
 		expect_equal(
-			epoxy_latex("<1> and <2> is <3>"),
+			epoxy_latex("<<1>> and <<2>> is <<3>>"),
 			glue("\\texttt{{1}} and \\texttt{{2}} is \\texttt{{3}}")
 		)
 	})
@@ -167,4 +266,95 @@ test_that("with_epoxy_engine()", {
 
 	expect_equal(with_epoxy_engine("latex", engine_current()), "latex")
 	expect_null(engine_current())
+})
+
+describe("epoxy() with various delimiters", {
+	one <- "apple"
+	two <- "banana"
+	three <- "mango"
+
+	it("works with { }", {
+		expect_equal(
+			epoxy("{one} and {two} or {three}"),
+			glue("{one} and {two} or {three}")
+		)
+
+		expect_equal(
+			epoxy("{one} and {{two}} or {three}"),
+			glue("{one} and {{two}} or {three}")
+		)
+	})
+
+	it("works with {{ }}", {
+		expect_equal(
+			epoxy("{{one}} and {{two}} or {{three}}", .open = "{{", .close = "}}"),
+			glue("{{one}} and {{two}} or {{three}}", .open = "{{", .close = "}}")
+		)
+
+	})
+
+	it("works with [ ]", {
+		expect_equal(
+			epoxy("[one] and [two] or [three]", .open = "[", .close = "]"),
+			glue("[one] and [two] or [three]", .open = "[", .close = "]")
+		)
+
+		expect_equal(
+			epoxy("[one] and [[two]] or [three]", .open = "[", .close = "]"),
+			glue("[one] and [[two]] or [three]", .open = "[", .close = "]")
+		)
+	})
+
+	it("works with [[ ]]", {
+		expect_equal(
+			epoxy("[[one]] and [[[[two]]]] or [[three]]", .open = "[[", .close = "]]"),
+			glue("[[one]] and [[[[two]]]] or [[three]]", .open = "[[", .close = "]]")
+		)
+
+		expect_equal(
+			epoxy("[[one]] and [[two]] or [[three]]", .open = "[[", .close = "]]"),
+			glue("[[one]] and [[two]] or [[three]]", .open = "[[", .close = "]]")
+		)
+	})
+
+	it("works with < > and << >>", {
+		expect_equal(
+			epoxy("<one> and <<two>> or <three>", .open = "<", .close = ">"),
+			glue("<one> and <<two>> or <three>", .open = "<", .close = ">")
+		)
+
+		expect_equal(
+			epoxy("<<one>> and <<two>> or <<three>>", .open = "<<", .close = ">>"),
+			glue("<<one>> and <<two>> or <<three>>", .open = "<<", .close = ">>")
+		)
+	})
+})
+
+test_that("epoxy() and epoxy_mustache() collect remote `tbl_sql` tables", {
+	skip_if_not_installed("dplyr")
+	skip_if_not_installed("dbplyr")
+	skip_if_not_installed("RSQLite")
+
+	# https://dbplyr.tidyverse.org/articles/reprex.html
+	mtcars_db <- dbplyr::memdb_frame(!!!mtcars)
+	mtcars_row <- dplyr::filter(mtcars_db, cyl == 4, gear == 4, disp > 145)
+
+	expect_equal(
+		epoxy(
+			"The car with {gear} gears, weighing {wt} tons, ",
+			"and with {hp} horsepower gets {mpg} mpg.",
+			.data = mtcars_row
+		),
+		"The car with 4 gears, weighing 3.19 tons, and with 62 horsepower gets 24.4 mpg."
+	)
+
+	expect_equal(
+		epoxy_mustache(
+			"The car with {{gear}} gears, weighing {{wt}} tons, ",
+			"and with {{hp}} horsepower gets {{mpg}} mpg.",
+			.data = mtcars_row,
+			.sep = ""
+		),
+		"The car with 4 gears, weighing 3.19 tons, and with 62 horsepower gets 24.4 mpg."
+	)
 })

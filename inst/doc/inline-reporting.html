@@ -415,26 +415,26 @@ results by accessing the list elements by name with <code>$</code>.</p>
 <span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>    <span class="at">doc_url =</span> <span class="st">&quot;https://rdrr.io/pkg/knitr/man/knit.html&quot;</span></span>
 <span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>)</span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>```{epoxy}</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>Report prepared on {knitted$when} from `{knitted$where}` </span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>with knitr version {knitted$with} {emo_ji(&#39;happy&#39;)}. </span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>Report prepared on {knitted$when} from `{knitted$where}`</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>with knitr version {knitted$with} {emo_ji(&#39;happy&#39;)}.</span>
 <span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>Read more about [`knitr::knit()`]({knitted$doc_url}).</span>
 <span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>```</span></code></pre></div>
 <div class="epoxy-output">
-<p>Report prepared on 2023-06-11 from <code>inline-reporting.Rmd</code>
-with knitr version 1.42 😆. Read more about <a href="https://rdrr.io/pkg/knitr/man/knit.html"><code>knitr::knit()</code></a>.</p>
+<p>Report prepared on 2023-09-19 from <code>inline-reporting.Rmd</code>
+with knitr version 1.44 😆. Read more about <a href="https://rdrr.io/pkg/knitr/man/knit.html"><code>knitr::knit()</code></a>.</p>
 </div>
 <p>This is still essentially equivalent to R Markdown’s inline R chunks.
-But <code>epoxy</code> chunks include a <code>data</code> chunk
+But <code>epoxy</code> chunks include a <code>.data</code> chunk
 argument, which allows us to reference items in the <code>knitted</code>
 list directly without having to use <code>$</code>.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>```{epoxy knitted-2, data = knitted}</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>Report prepared on {when} from `{where}` </span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>with knitr version {with} {emo_ji(&#39;happy&#39;)}. </span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>```{epoxy knitted-2, .data = knitted}</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>Report prepared on {when} from `{where}`</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>with knitr version {with} {emo_ji(&#39;happy&#39;)}.</span>
 <span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>Read more about [`knitr::knit()`]({doc_url}).</span>
 <span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>```</span></code></pre></div>
 <div class="epoxy-output">
-<p>Report prepared on 2023-06-11 from <code>inline-reporting.Rmd</code>
-with knitr version 1.42 😆. Read more about <a href="https://rdrr.io/pkg/knitr/man/knit.html"><code>knitr::knit()</code></a>.</p>
+<p>Report prepared on 2023-09-19 from <code>inline-reporting.Rmd</code>
+with knitr version 1.44 😆. Read more about <a href="https://rdrr.io/pkg/knitr/man/knit.html"><code>knitr::knit()</code></a>.</p>
 </div>
 <p>Note that we can still have arbitrary R code in epoxy inline
 expressions: the <code>emo_ji()</code> function — a vignette-safe
@@ -485,16 +485,16 @@ can index by the values in the <code>term</code> column.</p>
 <p>Now we can write up our results with inline reporting:</p>
 <pre><code>```{epoxy}
 The average log-size in the control condition was
-{stats$intercept$estimate} units, 
+{stats$intercept$estimate} units,
 95% Wald CI {stats$intercept$ci}.
-There was not a statistically clear difference between the 
-ozone conditions for their intercepts (day-0 values), 
+There was not a statistically clear difference between the
+ozone conditions for their intercepts (day-0 values),
 *B* = {stats$ozone$estimate}, {stats$ozone$ci}.
-For the control group, the average growth rate was 
-{stats$hund_days$estimate} log-size units per 100 days, 
-{stats$hund_days$ci}. The growth rate for 
-the ozone treatment group was significantly slower, 
-*diff* = {stats$hund_days_ozone$estimate}, 
+For the control group, the average growth rate was
+{stats$hund_days$estimate} log-size units per 100 days,
+{stats$hund_days$ci}. The growth rate for
+the ozone treatment group was significantly slower,
+*diff* = {stats$hund_days_ozone$estimate},
 {stats$hund_days_ozone$ci}.
 ```</code></pre>
 <div class="epoxy-output">
@@ -523,7 +523,7 @@ autocomplete the names in your data structures.</p>
 <p>Note that you don’t need to write your entire document or even
 paragraph inside an <code>epoxy</code> chunk; you can wrap only the
 data-heavy parts as needed.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>There was not a statistically clear difference between the </span>
+<div class="sourceCode" id="cb11"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>There was not a statistically clear difference between the</span>
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>ozone conditions for their intercepts (day-0 values),</span>
 <span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>```{epoxy}</span>
 <span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>*B* = {stats$ozone$estimate}, {stats$ozone$ci}.</span>
@@ -575,7 +575,7 @@ vectorized, so if we find ourselves needing to repeat the same thing
 over and over again, we can use this feature to our advantage.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>A quick recap of the growth observed in the orange trees:</span>
 <span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a></span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>```{epoxy data = orange_summary}</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>```{epoxy .data = orange_summary}</span>
 <span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>- Tree number {tree} started out at {circumference_first}mm and,</span>
 <span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  over {age_range} days, grew to be {circumference_last}mm.</span>
 <span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>```</span></code></pre></div>
@@ -599,7 +599,7 @@ over and over again, we can use this feature to our advantage.</p>
 <h3>Template inline reporting chunks</h3>
 <p>By using <a href="https://bookdown.org/yihui/rmarkdown-cookbook/reuse-chunks.html#ref-label">knitr’s
 reference labels feature</a>, and the <code>epoxy</code>
-<code>data</code> chunk option we saw above, you can create an epoxy
+<code>.data</code> chunk option we saw above, you can create an epoxy
 template that you can re-use like a parameterized chunk.</p>
 <p>You start by creating a labelled <code>epoxy</code> chunk with
 <code>eval = FALSE</code></p>
@@ -608,12 +608,12 @@ template that you can re-use like a parameterized chunk.</p>
 <span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>```</span></code></pre></div>
 <p>that you can later use in your prose by referencing the chunk with
 <code>ref.label</code> and providing a different slice of data via the
-<code>data</code> chunk option.</p>
+<code>.data</code> chunk option.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode default"><code class="sourceCode default"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>The fourth tree was the largest tree at the end of the study, growing</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>```{epoxy ref.label=&quot;average-growth&quot;, data = summarize_tree_growth(4)}</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>```{epoxy ref.label=&quot;average-growth&quot;, .data = summarize_tree_growth(4)}</span>
 <span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>```</span>
 <span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>Meanwhile, the smallest tree was the third, which grew at</span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>```{epoxy ref.label=&quot;average-growth&quot;, data = summarize_tree_growth(3)}</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>```{epoxy ref.label=&quot;average-growth&quot;, .data = summarize_tree_growth(3)}</span>
 <span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>```</span></code></pre></div>
 <div class="epoxy-output">
 <p>The fourth tree was the largest tree at the end of the study, growing

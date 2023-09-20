@@ -44,11 +44,19 @@
 #'   around the template variable or expression. Doubling the full delimiter
 #'   escapes it.
 ####
+#' @param .collapse A character string used to collapse a vector result into a
+#'   single value. If `NULL` (the default), the result is not collapsed.
 #' @inheritParams glue::glue
 #'
 #' @return Returns a transformed string, using `glue::glue()` but with the
 #'   additional transformers provided to the `.transformer` argument of
 #'   `epoxy()`.
+#'
+#' @seealso
+#'   * [use_epoxy_knitr_engines()] for knitr engines powered by these epoxy
+#'     functions.
+#'   * [epoxy_mustache()] for more powerful templating needs when you don't
+#'     need epoxy's inline formatting syntax.
 #'
 #' @rdname epoxy
 #' @name epoxy
@@ -66,6 +74,7 @@ epoxy <- function(
 	.literal = FALSE,
 	.trim = FALSE,
 	.transformer = NULL,
+	.collapse = NULL,
 	.style = lifecycle::deprecated()
 ) {
 	if (lifecycle::is_present(.style)) {
@@ -80,8 +89,10 @@ epoxy <- function(
 
 	glue_env <- .envir
 	if (!is.null(.data)) {
+		.data <- maybe_collect(.data)
 		glue_env <- new.env(parent = .envir)
 		assign("$", epoxy_data_subset, envir = glue_env)
+		assign(".data", .data, envir = glue_env)
 	}
 
 	opts_transformer <- list(
@@ -93,7 +104,7 @@ epoxy <- function(
 	old_opts <- options("epoxy:::private" = list(.open = .open, .close = .close))
 	on.exit(old_opts, add = TRUE)
 
-	glue_data(
+	res <- glue_data(
 		.x = .data,
 		...,
 		.sep     = .sep,
@@ -107,6 +118,12 @@ epoxy <- function(
 		.trim    = .trim,
 		.transformer = epoxy_options_get_transformer(opts_transformer)
 	)
+
+	if (is.null(.collapse) || length(res) <= 1) {
+		return(res)
+	}
+
+	glue_collapse(res, sep = .collapse)
 }
 
 
@@ -124,7 +141,8 @@ epoxy_html <- function(
 	.comment = "",
 	.literal = FALSE,
 	.trim = FALSE,
-	.transformer = NULL
+	.transformer = NULL,
+	.collapse = NULL
 ) {
 	res <-
 		with_epoxy_engine(
@@ -141,7 +159,8 @@ epoxy_html <- function(
 				.comment = .comment,
 				.literal = .literal,
 				.trim = .trim,
-				.transformer = .transformer
+				.transformer = .transformer,
+				.collapse = .collapse
 			)
 		)
 	html_chr(res)
@@ -155,14 +174,15 @@ epoxy_latex <- function(
 	.data = NULL,
 	.sep = "",
 	.envir = parent.frame(),
-	.open = "<",
-	.close = ">",
+	.open = "<<",
+	.close = ">>",
 	.na = "",
 	.null = "",
 	.comment = "",
 	.literal = FALSE,
 	.trim = FALSE,
-	.transformer = NULL
+	.transformer = NULL,
+	.collapse = NULL
 ) {
 	with_epoxy_engine(
 		"latex",
@@ -178,7 +198,8 @@ epoxy_latex <- function(
 			.comment = .comment,
 			.literal = .literal,
 			.trim = .trim,
-			.transformer = .transformer
+			.transformer = .transformer,
+			.collapse = .collapse
 		)
 	)
 }
@@ -190,11 +211,26 @@ with_epoxy_engine <- function(engine, expr) {
 	)
 }
 
+maybe_collect <- function(x) {
+	if (!inherits(x, "tbl_sql")) return(x)
+	if (!requireNamespace("dplyr", quietly = TRUE)) return(x)
+	dplyr::collect(x)
+}
+
 epoxy_data_subset <- function(x, y) {
 	y <- substitute(y)
-	x <- lapply(x, function(.x) base::`[[`(.x, y))
-	x_len_1 <- vapply(x, function(x) length(x) == 1, logical(1))
-	if (all(x_len_1)) unlist(x) else x
+	exact <- inherits(x, "tbl_df")
+
+	if (identical(deparse(substitute(x)), ".data")) {
+		return(base::`[[`(x, y, exact = exact))
+	}
+
+	ret <- tryCatch(base::`[[`(x, y, exact = exact), error = function(...) NULL)
+	if (!is.null(ret)) return(ret)
+
+	z <- lapply(x, function(.x) base::`[[`(.x, y, exact = exact))
+	z_len_1 <- vapply(z, function(z) length(z) == 1, logical(1))
+	if (all(z_len_1)) unlist(z) else z
 }
 
 epoxy_options_get_transformer <- function(options) {

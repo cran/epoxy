@@ -101,7 +101,7 @@ and it features movie stars
 <blockquote>
 The movie *Back to the Future Part II* was released in **1989**. It
 earned \$118,450,002 with a budget of \$40,000,000, and it features
-movie stars Michael J. Fox, Christopher Lloyd, Lea Thompson and Thomas
+movie stars Michael J. Fox, Christopher Lloyd, Lea Thompson, and Thomas
 F. Wilson.
 </blockquote>
 
@@ -153,7 +153,7 @@ output context.
 |:--------------|:---------------------|:---------------------------------------------------------:|
 | `epoxy`       | all-purpose markdown |                         `{expr}`                          |
 | `epoxy_html`  | HTML                 |                        `{{expr}}`                         |
-| `epoxy_latex` | LaTeX                |                         `<expr>`                          |
+| `epoxy_latex` | LaTeX                |                        `<<expr>>`                         |
 | `whisker`     | all-purpose          | [mustache template language](https://mustache.github.io/) |
 
 ⚠️ **Caution:** Previously, epoxy provided a `glue` engine, but this

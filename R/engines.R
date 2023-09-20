@@ -25,28 +25,65 @@
 #' @examplesIf interactive()
 #' use_epoxy_knitr_engines()
 #'
+#' @param include The epoxy knitr engines to include. Defaults to all engines
+#'   except for the `glue` engine (which is just an alias for the `epoxy`
+#'   engine).
 #' @param use_glue_engine If `TRUE` (default `FALSE`), uses \pkg{epoxy}'s `glue`
 #'   engine, most likely overwriting the `glue` engine provided by \pkg{glue}.
 #'
 #' @return Silently sets \pkg{epoxy}'s knitr engines and invisible returns
 #'   [knitr::knit_engines] as they were prior to the function call.
 #'
+#' @seealso [epoxy()], [epoxy_html()], [epoxy_latex()], and [epoxy_mustache()]
+#'   for the functions that power these knitr engines.
 #' @export
-use_epoxy_knitr_engines <- function(use_glue_engine = FALSE) {
+use_epoxy_knitr_engines <- function(
+	use_glue_engine = "glue" %in% include,
+	include = c("md", "html", "latex", "mustache")
+) {
 	old <- knitr::knit_engines$get()
+	force(use_glue_engine)
 
-	knitr::knit_engines$set(
-		epoxy         = knitr_engine_epoxy,
-		"epoxy_html"  = knitr_engine_epoxy_html,
-		"glue_html"   = knitr_engine_epoxy_html,
-		"epoxy_latex" = knitr_engine_epoxy_latex,
-		"glue_latex"  = knitr_engine_epoxy_latex,
-		"whisker"     = knitr_engine_whisker
+	include <- rlang::arg_match(
+		include,
+		values = c(names(engine_aliases), "mustache", "whisker"),
+		multiple = TRUE
 	)
+
+	include_mustache <- any(c("mustache", "whisker") %in% include)
+	include <- setdiff(include, c("mustache", "whisker"))
+	include <- unname(engine_validate_alias(include))
+
+	if ("md" %in% include) {
+		knitr::knit_engines$set(epoxy  = knitr_engine_epoxy)
+	}
+
+	if ("html" %in% include) {
+		knitr::knit_engines$set(
+			epoxy_html  = knitr_engine_epoxy_html,
+			"glue_html" = knitr_engine_epoxy_html
+		)
+	}
+
+	if ("latex" %in% include) {
+		knitr::knit_engines$set(
+			"epoxy_latex" = knitr_engine_epoxy_latex,
+			"glue_latex"  = knitr_engine_epoxy_latex
+		)
+	}
+
+	if (include_mustache) {
+		knitr::knit_engines$set(
+			"whisker"  = knitr_engine_whisker,
+			"mustache" = knitr_engine_whisker
+		)
+	}
 
 	if (isTRUE(use_glue_engine)) {
 		use_epoxy_glue_engine()
 	}
+
+	knitr_register_detect_inline()
 
 	invisible(old)
 }
@@ -61,25 +98,47 @@ use_epoxy_glue_engine <- function() {
 	invisible(old)
 }
 
+prefer_dotted_data_option <- function(options) {
+	if (!"data" %in% names(options)) {
+		return(options)
+	}
+	both_provided <- ".data" %in% names(options)
+
+	lifecycle::deprecate_warn(
+		when = "0.2.0",
+		what = I("The `data` chunk option"),
+		with = I("the `.data` option (note the leading dot)"),
+		details = if (both_provided) {
+			"Both `data` and `.data` were provided. The `.data` option will be used."
+		}
+	)
+
+	if (both_provided) {
+		return(options)
+	}
+
+	# rename "data" to ".data"
+	names(options)[which(names(options) == "data")] <- ".data"
+	options
+}
+
 eval_epoxy_engine <- function(fn, code, options) {
 	defaults <- formals(fn)
-	exclude <- c("...", ".data", ".style", ".transformer")
+	exclude <- c("...", ".data", ".style", ".transformer", ".envir")
 	defaults <- defaults[setdiff(names(defaults), exclude)]
 	defaults <- lapply(defaults, rlang::eval_bare, env = environment(fn))
 	defaults$.envir <- knitr::knit_global()
+	defaults$.collapse  <- "\n"
 
 	chunk_opt_names <- c("data", ".data", names(defaults))
 	chunk_opts <- options[intersect(chunk_opt_names, names(options))]
 
-	if ("data" %in% names(chunk_opts) && !".data" %in% names(chunk_opts)) {
-		names(chunk_opts)[which(names(chunk_opts) == "data")] <- ".data"
-	}
+	chunk_opts <- prefer_dotted_data_option(chunk_opts)
 
 	args <- purrr::list_assign(defaults, !!!chunk_opts)
 	args$.transformer <- epoxy_options_get_transformer(options)
 
-	out <- rlang::exec(fn, code, !!!args)
-	glue_collapse(out, sep = "\n")
+	rlang::exec(fn, code, !!!args)
 }
 
 knitr_engine_epoxy <- function(options) {
@@ -94,6 +153,7 @@ knitr_engine_epoxy <- function(options) {
 	}
 
 	options$results <- "asis"
+	options$output <- "asis"
 	options$echo <- knitr_chunk_option_echo(options)
 	knitr::engine_output(options, options$code, out)
 }
@@ -112,10 +172,11 @@ knitr_engine_epoxy_html <- function(options) {
 		if (isTRUE(options$html_raw %||% TRUE)) {
 			# use pandoc's raw html block by default, but this isn't always available
 			# so it can be disabled with the html_raw chunk option.
-			out <- paste0('```{=html}\n', out, "\n```")
+			out <- paste0("```{=html}\n", out, "\n```")
 		}
 	}
 	options$results <- "asis"
+	options$output <- "asis"
 	options$echo <- knitr_chunk_option_echo(options)
 	knitr::engine_output(options, options$code, out)
 }
@@ -145,22 +206,25 @@ knitr_engine_epoxy_latex <- function(options) {
 knitr_engine_whisker <- function(options) {
 	out <- if (isTRUE(options$eval)) {
 		options <- deprecate_glue_data_chunk_option(options)
-		code <- paste(options$code, collapse = "\n")
-		code <- if (!is.null(options[["data"]])) {
-			if (isTRUE(options[["data_asis"]])) {
-				whisker::whisker.render(code, data = options[["data"]])
-			} else {
-				vapply(
-					prep_whisker_data(options[["data"]]),
-					function(d) {
-						whisker::whisker.render(code, data = d)
-					},
-					character(1)
-				)
-			}
-		} else {
-			whisker::whisker.render(code, options[[".envir"]] %||% knitr::knit_global())
+		options <- prefer_dotted_data_option(options)
+
+		if (
+			!is.null(options[[".data"]]) &&
+				isTRUE(options[["data_asis"]]) &&
+				!inherits(options[[".data"]], "AsIs")
+		) {
+			options[[".data"]] <- I(options[[".data"]])
 		}
+
+		code <- epoxy_mustache(
+			!!!options[["code"]],
+			.data = options[[".data"]],
+			.sep = "\n",
+			.vectorized = options[[".vectorized"]] %||%
+				inherits(options[[".data"]], "data.frame"),
+			.partials = options[[".partials"]]
+		)
+
 		code <- glue_collapse(code, sep = "\n")
 		if (isTRUE(options$html_raw %||% FALSE)) {
 			# use pandoc's raw html block by default, but this isn't always available
@@ -169,6 +233,7 @@ knitr_engine_whisker <- function(options) {
 		}
 		code
 	}
+
 	options$results <- "asis"
 	options$echo <- knitr_chunk_option_echo(options)
 	knitr::engine_output(options, options$code, out)
@@ -187,9 +252,11 @@ prep_whisker_data <- function(x) {
 		stop("data must be the same length: ", paste(x_len[!x_null], collapse = ", "), call. = FALSE)
 	}
 
-	# turn list(a = 1:2, b = 3:4)
-	# into list(list(a = 1, b = 3), list(a = 2, b = 4))
-	lapply(seq_len(max(x_len)), function(i) lapply(x, function(y) y[[i]]))
+	# turn list(a = 1:2, b = 3:4, c = 5)
+	# into list(list(a = 1, b = 3, c = 5), list(a = 2, b = 4, c = 5))
+	lapply(seq_len(max(x_len)), function(i) lapply(x, function(y) {
+		y[[if (length(y) == 1) 1 else i]]
+	}))
 }
 
 knitr_chunk_option_echo <- function(options) {
@@ -211,7 +278,9 @@ deprecate_glue_data_chunk_option <- function(options) {
 }
 
 deprecate_epoxy_style_chunk_option <- function(options) {
-	if (is.null(options[["epoxy_style"]])) return()
+	if (is.null(options[["epoxy_style"]])) {
+		return()
+	}
 
 	lifecycle::deprecate_soft(
 		when = "0.1.0",
